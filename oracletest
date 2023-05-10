@@ -1,0 +1,178 @@
+import oracledb
+import time
+import csv
+import logging
+
+def connect_to_database(dsn, username, password):
+    """
+    Connects to an Oracle database and returns a connection object.
+    
+    Args:
+        dsn (str): The database service name, hostname, and port number.
+        username (str): The username for the database connection.
+        password (str): The password for the database connection.
+    
+    Returns:
+        A connection object.
+    """
+    return oracledb.connect(username, password, dsn)
+
+def query_schemas(conn, schemas, csv_writer, logger):
+    """
+    Queries a list of schemas in an Oracle database connection.
+    Writes the output to a CSV file using the provided CSV writer.
+    
+    Args:
+        conn: The connection object for the Oracle database.
+        schemas (list): A list of schema names to query.
+        csv_writer: The CSV writer object to use for writing results to a file.
+        logger: The logger object to use for logging errors.
+    """
+    for schema in schemas:
+        # Construct SQL query
+        sql = f"SELECT * FROM {schema}.table"
+        
+        # Execute query and write results to CSV file
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                logger.info(f"Results for schema {schema}:")
+                for row in rows:
+                    logger.info(row)
+                    csv_writer.writerow([schema] + list(row))
+        except oracledb.DatabaseError as e:
+            logger.error(f"Database error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+
+def main():
+    # List of connection strings to try
+    connection_strings = [
+        {'dsn': oracledb.makedsn('hostname1', 'port1', service_name='service_name1'), 'username': 'username1', 'password': 'password1'},
+        {'dsn': oracledb.makedsn('hostname2', 'port2', service_name='service_name2'), 'username': 'username2', 'password': 'password2'},
+        {'dsn': oracledb.makedsn('hostname3', 'port3', service_name='service_name3'), 'username': 'username3', 'password': 'password3'},
+    ]
+
+    # List of schemas to query
+    schemas = ['schema1', 'schema2', 'schema3']
+
+    # Maximum number of connection retries
+    max_retries = 3
+    
+    # Configure logging
+    logging.basicConfig(filename='query.log', level=logging.INFO)
+
+    # Try each connection string in the list
+    for connection_string in connection_strings:
+        # Connect to Oracle database with retries
+        for retry in range(max_retries):
+            try:
+                with connect_to_database(**connection_string) as conn:
+                    # Open CSV file for writing
+                    with open(f'results_{connection_string["username"]}.csv', 'w', newline='') as csvfile:
+                        csv_writer = csv.writer(csvfile)
+                        # Write headers to CSV file
+                        csv_writer.writerow(['schema', 'col1', 'col2', 'col3'])
+                        query_schemas(conn, schemas, csv_writer, logging.getLogger())
+                    break  # Connection succeeded, exit loop
+            
+            except oracledb.DatabaseError as e:
+                logging.error(f"Database error: {e}")
+                # Handle error as needed (e.g. log error, send notification, etc.)
+                
+            except Exception as e:
+                logging.error(f"Unexpected error: {e}")
+
+#######   
+
+import oracledb
+import time
+import csv
+import logging
+
+def connect_to_database(dsn, username, password):
+    """
+    Connects to an Oracle database and returns a connection object.
+    
+    Args:
+        dsn (str): The database service name, hostname, and port number.
+        username (str): The username for the database connection.
+        password (str): The password for the database connection.
+    
+    Returns:
+        A connection object.
+    """
+    return oracledb.connect(username, password, dsn)
+
+def query_schemas(conn, schemas, csv_writer, logger):
+    """
+    Queries a list of schemas in an Oracle database connection.
+    Writes the output to a CSV file using the provided CSV writer.
+    
+    Args:
+        conn: The connection object for the Oracle database.
+        schemas (list): A list of schema names to query.
+        csv_writer: The CSV writer object to use for writing results to a file.
+        logger: The logger object to use for logging errors.
+    """
+    for schema in schemas:
+        # Construct SQL query
+        sql = f"SELECT * FROM {schema}.table"
+        
+        # Execute query and write results to CSV file
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                logger.info(f"Results for schema {schema}:")
+                for row in rows:
+                    logger.info(row)
+                    csv_writer.writerow([schema] + list(row))
+        except oracledb.DatabaseError as e:
+            logger.error(f"Database error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+
+def main():
+    # Set up connection details
+    dsn = oracledb.makedsn('hostname', 'port', service_name='service_name')
+    username = 'username'
+    password = 'password'
+
+    # List of schemas to query
+    schemas = ['schema1', 'schema2', 'schema3']
+
+    # Maximum number of connection retries
+    max_retries = 3
+    
+    # Configure logging
+    logging.basicConfig(filename='query.log', level=logging.INFO)
+
+    # Connect to Oracle database with retries
+    for retry in range(max_retries):
+        try:
+            with connect_to_database(dsn, username, password) as conn:
+                # Open CSV file for writing
+                with open('results.csv', 'w', newline='') as csvfile:
+                    csv_writer = csv.writer(csvfile)
+                    # Write headers to CSV file
+                    csv_writer.writerow(['schema', 'col1', 'col2', 'col3'])
+                    query_schemas(conn, schemas, csv_writer, logging.getLogger())
+                break  # Connection succeeded, exit loop
+        
+        except oracledb.DatabaseError as e:
+            logging.error(f"Database error: {e}")
+            # Handle error as needed (e.g. log error, send notification, etc.)
+            
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+            # Handle error as needed (e.g. log error, send notification, etc.)
+            
+        # Wait before retrying connection
+        if retry < max_retries - 1:
+            logging.info(f"Retrying database connection in 10 seconds...")
+            time.sleep(10)
+
+if __name__ == "__main__":
+    main()
